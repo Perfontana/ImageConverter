@@ -2,39 +2,36 @@
 const { exec } = require('child_process');
 const { getUploadDirectory } = require('../config/uploadSettings');
 const ErrorResponse = require('../utils/errorResponse');
+
 // @desc      Process audip file
 // @route     POST /api/v1/audio/process
 // @access    Public
 module.exports.processFile = (req, res, next) => {
-  req.body.inputFile = req.files.audioFile.tempFilePath;
-  req.body.outputFile = outputFile(req.body);
-  const command = constructCommand(req.body);
-  exec(command, (err, stdout, stderr) => {
+  if (!req.files || Object.keys(req.files).length === 0) {
+    return next(new ErrorResponse('Please upload file to convert.', 400));
+  }
+
+  if (!req.body.type) {
+    return next(new ErrorResponse('Type paramether is missing.', 400));
+  }
+
+  const options = getCommandOptions(req);
+
+  exec(constructCommand(options), (err, stdout, stderr) => {
     if (err) {
-      timerDelete(req.body.inputFile, 15000);
-      return next(new ErrorResponse(err, 500));
+      return next(new ErrorResponse(err, 400));
     }
 
-    timerDelete(req.body.inputFile, 15000);
-    timerDelete(req.body.outputFile, 120000);
+    if (stderr) {
+      return next(new ErrorResponse(stderr, 400));
+    }
 
     res.status(200).json({
       success: true,
-      data: getFileLink(req.body.outputFile),
+      data: getFileLink(options.outputFile),
     });
   });
 };
-
-function getFileLink(path) {
-  return '/uploads/' + path.split('/').pop();
-}
-
-// Need to change exec to nodeJS fylesystem.unlink later
-function timerDelete(filePath, miliseconds) {
-  setTimeout(() => {
-    exec('rm ' + filePath);
-  }, miliseconds);
-}
 
 function constructCommand(options) {
   return (
@@ -47,9 +44,20 @@ function constructCommand(options) {
   );
 }
 
-function outputFile(options) {
-  const inputFile = options.inputFile.split('/');
-  const outputFile =
-    getUploadDirectory() + inputFile.pop() + '.' + options.type;
-  return outputFile;
+function getFileName(filePath) {
+  return filePath.split('/').pop();
+}
+
+function getCommandOptions(req) {
+  const options = {};
+  options.type = req.body.type;
+  options.inputFile = req.files.audioFile.tempFilePath;
+  options.outputFile =
+    getUploadDirectory() + getFileName(options.inputFile) + '.' + options.type;
+  return options;
+}
+
+function getFileLink(filePath) {
+  const path = filePath.split('/');
+  return '/' + path[path.length - 2] + '/' + path[path.length - 1];
 }
