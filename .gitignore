@@ -2,4 +2,4 @@
 /client
 /tmp
 package-lock.json
-/public/uploads
+/config/.env

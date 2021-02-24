@@ -1,4 +1,5 @@
 const express = require('express');
+const dotenv = require('dotenv');
 const fileUpload = require('express-fileupload');
 const errorHandler = require('./middleware/error');
 const {
@@ -7,7 +8,10 @@ const {
   getTempDirectory,
 } = require('./config/uploadSettings');
 const audio = require('./routes/audio');
+const comments = require('./routes/comments');
 const app = express();
+
+dotenv.config({ path: './config/.env' });
 
 setTempDirectory(__dirname + '/tmp/');
 setUploadDirectory(__dirname + '/public/uploads/');
@@ -22,10 +26,13 @@ app.use(express.static('public'));
 app.use(express.json());
 
 app.use('/api/v1/audio', audio);
+app.use('/api/v1/comments', comments);
 
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
+
+require('./config/db');
 
 const server = app.listen(
   PORT,
