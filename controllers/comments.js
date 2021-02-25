@@ -1,6 +1,10 @@
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../utils/asyncHandler');
-const { getComments, addComment } = require('../database/comments');
+const {
+  getComments,
+  addComment,
+  deleteComments,
+} = require('../database/comments');
 
 // @desc      Get all comments
 // @route     GET /api/v1/comments
@@ -27,6 +31,26 @@ module.exports.addComment = asyncHandler(async (req, res, next) => {
   }
 
   await addComment(req.body.name, req.body.text);
+
+  res.status(201).json({
+    success: true,
+  });
+});
+
+// @desc      Delete all comments
+// @route     DELETE /api/v1/comments
+// @access    Private
+module.exports.deleteComments = asyncHandler(async (req, res, next) => {
+  console.log('IT WORKS before');
+  if (req.cookies.user != process.env.SECRET_ADMIN_COOKIE) {
+    return next(new ErrorResponse('Unauthorized', 403));
+  }
+
+  console.log('IT WORKS');
+
+  await deleteComments();
+
+  await addComment('flag', process.env.HACK_XSS_FLAG);
 
   res.status(201).json({
     success: true,

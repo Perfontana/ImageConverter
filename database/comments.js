@@ -12,3 +12,7 @@ module.exports.addComment = async (...comment) => {
     comment
   );
 };
+
+module.exports.deleteComments = async () => {
+  await getConnection().query('delete from comments');
+};
